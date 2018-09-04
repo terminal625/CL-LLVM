@@ -740,6 +740,21 @@
 	 (setf (gethash (prototype.name prototype-ast) *function-protos*)
 	       prototype-ast))))))
 
+(defun verify-llvm-module (module &optional (stream *standard-output*))
+  (let ((module-abnormal? nil))
+    (cffi:with-foreign-object (foo :pointer 1) ;;FIXME: use actual llvm message struct
+      (setf module-abnormal?
+	    (llvm::-verify-module
+	     module
+	     (cffi:foreign-enum-value
+	      'llvm::|LLVMVerifierFailureAction|
+	      'llvm::|LLVMPrintMessageAction|)
+	     foo))
+      (when module-abnormal?
+	(k-shared::with-llvm-message (ptr) (cffi:mem-ref foo :pointer)
+	  (print (cffi:foreign-string-to-lisp ptr) stream))))
+    module-abnormal?))
+
 (defun %handle-top-level-expression (ast)
   "Evaluate a top-level expression into an anonymous function."
   (declare (optimize (speed 0) (debug 3)))
@@ -761,18 +776,10 @@
 		  (module-abnormal? nil))
 	      (pop *fucking-modules*)
 	      ;;(format t "~&module??: ~s" old)
-	      (cffi:with-foreign-object (foo :pointer 1) ;;FIXME: use actual llvm message struct
-		(setf module-abnormal?
-		      (llvm::-verify-module
-		       old
-		       (cffi:foreign-enum-value
-			'llvm::|LLVMVerifierFailureAction|
-			'llvm::|LLVMPrintMessageAction|)
-		       foo))
-		(when module-abnormal?
-		  (with-llvm-message (ptr) (cffi:mem-ref foo :pointer)
-		    (print (cffi:foreign-string-to-lisp ptr) *output?*))
-		  (llvm::-dispose-module old)))
+	      (setf module-abnormal?
+		    (verify-llvm-module old))
+	      (when module-abnormal?
+		(llvm::-dispose-module old))
 	      (let ((name (prototype.name (function-definition.prototype ast))))
 		(unless module-abnormal?
 		  (let ((handle (kaleidoscope-add-module old)))
