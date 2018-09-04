@@ -761,7 +761,7 @@
 		  (module-abnormal? nil))
 	      (pop *fucking-modules*)
 	      ;;(format t "~&module??: ~s" old)
-	      (cffi:with-foreign-object (foo :pointer 1)
+	      (cffi:with-foreign-object (foo :pointer 1) ;;FIXME: use actual llvm message struct
 		(setf module-abnormal?
 		      (llvm::-verify-module
 		       old
@@ -823,12 +823,10 @@
      (llvm::initialize-native-target?)
      (llvm::initialize-native-Asm-parser)
      (llvm::initialize-native-asm-printer)
-     (let ((*jit?* t))
-       (clrhash *function-protos*)
-       (unwind-protect
-	    (progn (kaleidoscope-create)
-		   ,@body)
-	 (kaleidoscope-destroy)))))
+     (unwind-protect
+	  (progn (kaleidoscope-create)
+		 ,@body)
+       (kaleidoscope-destroy))))
 
 (defmacro with-builder (var &body body)
   (with-gensyms (completed? value)
@@ -897,7 +895,9 @@
       (with-builder *builder*
 	(cond (*jit?*
 	       (with-kaleidoscope-jit
-		 (%start)))
+		 (let ((*jit?* t))
+		   (clrhash *function-protos*)
+		   (%start))))
 	      (*compile-to-object-code?*
 	       (%start)
 	       (dump-object-file *object-filename*))
