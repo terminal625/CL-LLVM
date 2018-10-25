@@ -912,7 +912,7 @@
 	       (%start)))))
     (values)))
 
-(defparameter *object-filename* "/home/imac/install/other/output.o")
+(defparameter *object-filename* "/home/imac/install/llvm-things/other/output.o")
 (defun dump-object-file (filename)
   (llvm::initialize-all-target-infos)
   (llvm::initialize-all-targets)
