@@ -20,7 +20,9 @@
  )
 
 
-(defparameter *this-directory* (filesystem-util:this-directory))
+(defparameter *this-directory* (utility:rebase-path
+				"tutorial/"
+				(asdf:system-source-directory :kaleidoscope256)))
 
 (defparameter *output?* (make-synonym-stream '*standard-output*))
 (defparameter *input?* (make-synonym-stream '*standard-input*))

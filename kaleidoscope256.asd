@@ -6,7 +6,6 @@
   :depends-on
   (#:cffi
    #:utility
-   #:filesystem-util
    #:llvm256)
   :components
   ((:module
